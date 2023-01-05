@@ -88,13 +88,13 @@ public class NumberValidator extends FormValidator {
             amount = values[0];
         }
 
-        //amount on configuration
+        // amount on configuration
         if (amount.isEmpty()) {
             data.addFormError(id, "Please key in value.");
             return false;
-        } 
+        }
         
-        else if (Pattern.matches("\\D", amount)){
+        if (Pattern.matches("\\D*", amount)){
             data.addFormError(id, "Please key in numerical value only.");
             return false;
         }

@@ -74,7 +74,9 @@
             {
                 "name": "emptyValueMessage",
                 "label": "@@form.marketplace.NumberValidator.emptyValueMessage@@",
-                "type": "textfield"
+                "type": "textfield",
+                "control_field": "compareAgainst",
+                "control_value": "formField"
             }
         ]
     }
