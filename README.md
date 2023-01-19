@@ -2,7 +2,7 @@
 
 This plugin is a form validator plugin that validates numerical values against a fixed value or another form field value with operator such as = or >= or <= or < or >.
 
-This plugin is still in **initial design stage**.
+Please see [documentation](https://dev.joget.org/community/display/marketplace/Number+Form+Validator).
 
 # Getting Help
 
