@@ -30,7 +30,7 @@ public class NumberValidator extends FormValidator {
     }
 
     public String getVersion() {
-        return "7.0.0";
+        return "7.0-SNAPSHOT";
     }
 
     public String getLabel() {
@@ -83,7 +83,7 @@ public class NumberValidator extends FormValidator {
         boolean result = true;
         String id = FormUtil.getElementParameterName(element);
         String amount = "";
-        
+
         if (values.length > 0) {
             amount = values[0];
         }
@@ -93,49 +93,47 @@ public class NumberValidator extends FormValidator {
             data.addFormError(id, "Please key in value.");
             return false;
         }
-        
-        if (Pattern.matches("\\D*", amount)){
+
+        if (Pattern.matches("\\D*", amount)) {
             data.addFormError(id, "Please key in numerical value only.");
             return false;
-        }
-        
-        else{
+        } else {
             float amountF = Float.parseFloat(amount);
-            
-                AppDefinition appDef = AppUtil.getCurrentAppDefinition();
-                String tableName = null;
-                AppService appService = (AppService) AppUtil.getApplicationContext().getBean("appService");
-                String key = element.getPrimaryKeyValue(data);
-                String[] fieldValue = data.getRequestParameterValues(fieldId);
-                
-                if (formDefId != null) {
-                    tableName = appService.getFormTableName(appDef, formDefId);
-                }
+
+            AppDefinition appDef = AppUtil.getCurrentAppDefinition();
+            String tableName = null;
+            AppService appService = (AppService) AppUtil.getApplicationContext().getBean("appService");
+            String key = element.getPrimaryKeyValue(data);
+            String[] fieldValue = data.getRequestParameterValues(fieldId);
+
+            if (formDefId != null) {
+                tableName = appService.getFormTableName(appDef, formDefId);
+            }
 
             if (operator != null) {
                 if (operator.equals("=")) {
                     result = validateEqual(data, id, values, amountF, customMessage, emptyValueMessage, formDefId, fieldId, customValue, tableName, key, fieldValue);
                 }
-                
+
                 if (operator.equals("<>")) {
                     result = validateNotEqual(data, id, values, amountF, customMessage, emptyValueMessage, formDefId, fieldId, customValue, tableName, key, fieldValue);
                 }
-                
+
                 if (operator.equals(">")) {
                     result = validateGreaterThan(data, id, values, amountF, customMessage, emptyValueMessage, formDefId, fieldId, customValue, tableName, key, fieldValue);
                 }
-               
+
                 if (operator.equals(">=")) {
                     result = validateGreaterThanOrEqual(data, id, values, amountF, customMessage, emptyValueMessage, formDefId, fieldId, customValue, tableName, key, fieldValue);
                 }
-                
+
                 if (operator.equals("<")) {
                     result = validateLessThan(data, id, values, amountF, customMessage, emptyValueMessage, formDefId, fieldId, customValue, tableName, key, fieldValue);
                 }
-                
+
                 if (operator.equals("<=")) {
                     result = validateLessThanOrEqual(data, id, values, amountF, customMessage, emptyValueMessage, formDefId, fieldId, customValue, tableName, key, fieldValue);
-                }  
+                }
             }
             return result;
         }
@@ -145,10 +143,9 @@ public class NumberValidator extends FormValidator {
         boolean result = true;
 
         if (values != null && values.length > 0) {
-
             if (customValue != null && !customValue.isEmpty()) {
 
-                Float valueF = Float.parseFloat(customValue);
+                Float valueF = Float.valueOf(customValue);
 
                 if ((Float.compare(amountF, valueF) != 0)) {
                     if (customMessage == null || customMessage.isEmpty()) {
@@ -158,87 +155,79 @@ public class NumberValidator extends FormValidator {
                     }
                     result = false;
                 }
-            } 
-            
-            else {
+            } else {
                 String comparedAgainstFieldValue;
-                
+
                 //grab value from form-field id logic
-                if(tableName != null){
-                FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
-                
-                
-                //if record does exist
-                if (key != null){
-                    try{
-                    FormRow existingRow = formDataDao.load(formDefId, tableName, key);
-                    String existingValue = existingRow.get(fieldId).toString();
-                    String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
-                    FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
-                    comparedAgainstFieldValue = row.get(fieldId).toString(); 
-                    }catch (Exception e){
-                        comparedAgainstFieldValue = null;
-                    }
-                    
-                    //if the compared field is empty
-                    if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
+                if (tableName != null) {
+                    FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
+
+                    //if record does exist
+                    if (key != null) {
+                        try {
+                            FormRow existingRow = formDataDao.load(formDefId, tableName, key);
+                            String existingValue = existingRow.get(fieldId).toString();
+                            String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
+                            FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
+                            comparedAgainstFieldValue = row.get(fieldId).toString();
+                        } catch (Exception e) {
+                            comparedAgainstFieldValue = null;
                         }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
+
+                        //if the compared field is empty
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+
+                            return false;
                         }
-                        
-                        return false;
-                    }
-                }
-                
-                //if record is new
-                else {
-                    try{
-                         comparedAgainstFieldValue = fieldValue[0];
-                    }catch (Exception e){
-                        //handle exception when record is new, but compared value doesn't exist
-                        comparedAgainstFieldValue = null;
-                    }
-                    //if the compared field is empty           
-                    if  (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
-                        }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
-                        }
-                     return false;
-                    }
-                }
-                    
-                float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
-                
-                if ((Float.compare(amountF, comparedAgainstFieldValueFloat) != 0)) {
-                    if (customMessage == null || customMessage.isEmpty()) {
-                        data.addFormError(id, "Number Validation Failed");
                     } else {
-                        data.addFormError(id, customMessage);
+                        //if record is new
+                        try {
+                            comparedAgainstFieldValue = fieldValue[0];
+                        } catch (Exception e) {
+                            //handle exception when record is new, but compared value doesn't exist
+                            comparedAgainstFieldValue = null;
+                        }
+                        //if the compared field is empty           
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+                            return false;
+                        }
                     }
-                    result = false;
+
+                    float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
+
+                    if ((Float.compare(amountF, comparedAgainstFieldValueFloat) != 0)) {
+                        if (customMessage == null || customMessage.isEmpty()) {
+                            data.addFormError(id, "Number Validation Failed");
+                        } else {
+                            data.addFormError(id, customMessage);
+                        }
+                        result = false;
+                    }
+
                 }
-                
-                } 
             }
         }
         return result;
     }
 
-   
     protected boolean validateNotEqual(FormData data, String id, String[] values, Float amountF, String customMessage, String emptyValueMessage, String formDefId, String fieldId, String customValue, String tableName, String key, String[] fieldValue) {
-     boolean result = true;
+        boolean result = true;
 
         if (values != null && values.length > 0) {
 
             if (customValue != null && !customValue.isEmpty()) {
 
-                Float valueF = Float.parseFloat(customValue);
+                Float valueF = Float.valueOf(customValue);
 
                 if ((Float.compare(amountF, valueF) == 0)) {
                     if (customMessage == null || customMessage.isEmpty()) {
@@ -248,86 +237,78 @@ public class NumberValidator extends FormValidator {
                     }
                     result = false;
                 }
-            } 
-            
-            else {
+            } else {
                 String comparedAgainstFieldValue;
-                
+
                 //grab value from form-field id logic
-                if(tableName != null){
-                FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
-                
-                
-                //if record does exist
-                if (key != null){
-                    try{
-                    FormRow existingRow = formDataDao.load(formDefId, tableName, key);
-                    String existingValue = existingRow.get(fieldId).toString();
-                    String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
-                    FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
-                    comparedAgainstFieldValue = row.get(fieldId).toString(); 
-                    }catch (Exception e){
-                        comparedAgainstFieldValue = null;
-                    }
-                    
-                    //if the compared field is empty
-                    if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
+                if (tableName != null) {
+                    FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
+
+                    //if record does exist
+                    if (key != null) {
+                        try {
+                            FormRow existingRow = formDataDao.load(formDefId, tableName, key);
+                            String existingValue = existingRow.get(fieldId).toString();
+                            String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
+                            FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
+                            comparedAgainstFieldValue = row.get(fieldId).toString();
+                        } catch (Exception e) {
+                            comparedAgainstFieldValue = null;
                         }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
+
+                        //if the compared field is empty
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+
+                            return false;
                         }
-                        
-                        return false;
+                    } //if record is new
+                    else {
+                        try {
+                            comparedAgainstFieldValue = fieldValue[0];
+                        } catch (Exception e) {
+                            //handle exception when record is new, but compared value doesn't exist
+                            comparedAgainstFieldValue = null;
+                        }
+                        //if the compared field is empty           
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+                            return false;
+                        }
                     }
+                    float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
+
+                    if ((Float.compare(amountF, comparedAgainstFieldValueFloat) == 0)) {
+                        if (customMessage == null || customMessage.isEmpty()) {
+                            data.addFormError(id, "Number Validation Failed");
+                        } else {
+                            data.addFormError(id, customMessage);
+                        }
+                        result = false;
+                    }
+
                 }
-                
-                //if record is new
-                else {
-                    try{
-                         comparedAgainstFieldValue = fieldValue[0];
-                    }catch (Exception e){
-                        //handle exception when record is new, but compared value doesn't exist
-                        comparedAgainstFieldValue = null;
-                    }
-                    //if the compared field is empty           
-                    if  (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
-                        }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
-                        }
-                     return false;
-                    }
-                }    
-                float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
-                
-                if ((Float.compare(amountF, comparedAgainstFieldValueFloat) == 0)) {
-                    if (customMessage == null || customMessage.isEmpty()) {
-                        data.addFormError(id, "Number Validation Failed");
-                    } else {
-                        data.addFormError(id, customMessage);
-                    }
-                    result = false;
-                }
-                
-                } 
             }
         }
         return result;
     }
 
-     
-    protected boolean validateGreaterThan(FormData data, String id, String[] values, Float amountF, String customMessage, String emptyValueMessage, String formDefId, String fieldId, String customValue, String tableName, String key, String[] fieldValue){
-     boolean result = true;
+    protected boolean validateGreaterThan(FormData data, String id, String[] values, Float amountF, String customMessage, String emptyValueMessage, String formDefId, String fieldId, String customValue, String tableName, String key, String[] fieldValue) {
+        boolean result = true;
 
         if (values != null && values.length > 0) {
 
             if (customValue != null && !customValue.isEmpty()) {
 
-                Float valueF = Float.parseFloat(customValue);
+                Float valueF = Float.valueOf(customValue);
 
                 if ((Float.compare(amountF, valueF) <= 0)) {
                     if (customMessage == null || customMessage.isEmpty()) {
@@ -337,86 +318,79 @@ public class NumberValidator extends FormValidator {
                     }
                     result = false;
                 }
-            } 
-            
-            else {
+            } else {
                 String comparedAgainstFieldValue;
-                
+
                 //grab value from form-field id logic
-                if(tableName != null){
-                FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
-                
-                
-                //if record does exist
-                if (key != null){
-                    try{
-                    FormRow existingRow = formDataDao.load(formDefId, tableName, key);
-                    String existingValue = existingRow.get(fieldId).toString();
-                    String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
-                    FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
-                    comparedAgainstFieldValue = row.get(fieldId).toString(); 
-                    }catch (Exception e){
-                        comparedAgainstFieldValue = null;
-                    }
-                    
-                    //if the compared field is empty
-                    if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
+                if (tableName != null) {
+                    FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
+
+                    //if record does exist
+                    if (key != null) {
+                        try {
+                            FormRow existingRow = formDataDao.load(formDefId, tableName, key);
+                            String existingValue = existingRow.get(fieldId).toString();
+                            String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
+                            FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
+                            comparedAgainstFieldValue = row.get(fieldId).toString();
+                        } catch (Exception e) {
+                            comparedAgainstFieldValue = null;
                         }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
+
+                        //if the compared field is empty
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+                            return false;
                         }
-                     return false;
+                    } //if record is new
+                    else {
+                        try {
+                            comparedAgainstFieldValue = fieldValue[0];
+                        } catch (Exception e) {
+                            //handle exception when record is new, but compared value doesn't exist
+                            comparedAgainstFieldValue = null;
+                        }
+                        //if the compared field is empty           
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+
+                            return false;
+                        }
                     }
+
+                    float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
+
+                    if ((Float.compare(amountF, comparedAgainstFieldValueFloat) <= 0)) {
+                        if (customMessage == null || customMessage.isEmpty()) {
+                            data.addFormError(id, "Number Validation Failed");
+                        } else {
+                            data.addFormError(id, customMessage);
+                        }
+                        result = false;
+                    }
+
                 }
-                
-                //if record is new
-                else {
-                    try{
-                         comparedAgainstFieldValue = fieldValue[0];
-                    }catch (Exception e){
-                        //handle exception when record is new, but compared value doesn't exist
-                        comparedAgainstFieldValue = null;
-                    }
-                    //if the compared field is empty           
-                    if  (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
-                        }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
-                        }
-                        
-                        return false;
-                    }
-                }
-                    
-                float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
-                
-                if ((Float.compare(amountF, comparedAgainstFieldValueFloat) <= 0)) {
-                    if (customMessage == null || customMessage.isEmpty()) {
-                        data.addFormError(id, "Number Validation Failed");
-                    } else {
-                        data.addFormError(id, customMessage);
-                    }
-                    result = false;
-                }
-                
-                } 
             }
         }
         return result;
     }
-    
+
     protected boolean validateGreaterThanOrEqual(FormData data, String id, String[] values, Float amountF, String customMessage, String emptyValueMessage, String formDefId, String fieldId, String customValue, String tableName, String key, String[] fieldValue) {
-     boolean result = true;
+        boolean result = true;
 
         if (values != null && values.length > 0) {
 
             if (customValue != null && !customValue.isEmpty()) {
 
-                Float valueF = Float.parseFloat(customValue);
+                Float valueF = Float.valueOf(customValue);
 
                 if ((Float.compare(amountF, valueF) < 0)) {
                     if (customMessage == null || customMessage.isEmpty()) {
@@ -426,85 +400,78 @@ public class NumberValidator extends FormValidator {
                     }
                     result = false;
                 }
-            } 
-            
-            else {
+            } else {
                 String comparedAgainstFieldValue;
-                
+
                 //grab value from form-field id logic
-                if(tableName != null){
-                FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
-                
-                
-                //if record does exist
-                if (key != null){
-                    try{
-                    FormRow existingRow = formDataDao.load(formDefId, tableName, key);
-                    String existingValue = existingRow.get(fieldId).toString();
-                    String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
-                    FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
-                    comparedAgainstFieldValue = row.get(fieldId).toString(); 
-                    }catch (Exception e){
-                        comparedAgainstFieldValue = null;
-                    }
-                    
-                    //if the compared field is empty
-                    if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
+                if (tableName != null) {
+                    FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
+
+                    //if record does exist
+                    if (key != null) {
+                        try {
+                            FormRow existingRow = formDataDao.load(formDefId, tableName, key);
+                            String existingValue = existingRow.get(fieldId).toString();
+                            String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
+                            FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
+                            comparedAgainstFieldValue = row.get(fieldId).toString();
+                        } catch (Exception e) {
+                            comparedAgainstFieldValue = null;
                         }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
+
+                        //if the compared field is empty
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+
+                            return false;
                         }
-                        
-                        return false;
+                    } //if record is new
+                    else {
+                        try {
+                            comparedAgainstFieldValue = fieldValue[0];
+                        } catch (Exception e) {
+                            //handle exception when record is new, but compared value doesn't exist
+                            comparedAgainstFieldValue = null;
+                        }
+                        //if the compared field is empty           
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+                            return false;
+                        }
                     }
+                    float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
+
+                    if ((Float.compare(amountF, comparedAgainstFieldValueFloat) < 0)) {
+                        if (customMessage == null || customMessage.isEmpty()) {
+                            data.addFormError(id, "Number Validation Failed");
+                        } else {
+                            data.addFormError(id, customMessage);
+                        }
+                        result = false;
+                    }
+
                 }
-                
-                //if record is new
-                else {
-                    try{
-                         comparedAgainstFieldValue = fieldValue[0];
-                    }catch (Exception e){
-                        //handle exception when record is new, but compared value doesn't exist
-                        comparedAgainstFieldValue = null;
-                    }
-                    //if the compared field is empty           
-                    if  (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
-                        }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
-                        }
-                     return false;
-                    }
-                }    
-                float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
-                
-                if ((Float.compare(amountF, comparedAgainstFieldValueFloat) < 0)) {
-                    if (customMessage == null || customMessage.isEmpty()) {
-                        data.addFormError(id, "Number Validation Failed");
-                    } else {
-                        data.addFormError(id, customMessage);
-                    }
-                    result = false;
-                }
-                
-                } 
             }
         }
         return result;
     }
 
     protected boolean validateLessThan(FormData data, String id, String[] values, Float amountF, String customMessage, String emptyValueMessage, String formDefId, String fieldId, String customValue, String tableName, String key, String[] fieldValue) {
-     boolean result = true;
+        boolean result = true;
 
         if (values != null && values.length > 0) {
 
             if (customValue != null && !customValue.isEmpty()) {
 
-                Float valueF = Float.parseFloat(customValue);
+                Float valueF = Float.valueOf(customValue);
 
                 if ((Float.compare(amountF, valueF) >= 0)) {
                     if (customMessage == null || customMessage.isEmpty()) {
@@ -514,86 +481,79 @@ public class NumberValidator extends FormValidator {
                     }
                     result = false;
                 }
-            } 
-            
-            else {
+            } else {
                 String comparedAgainstFieldValue;
-                
+
                 //grab value from form-field id logic
-                if(tableName != null){
-                FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
-                
-                
-                //if record does exist
-                if (key != null){
-                    try{
-                    FormRow existingRow = formDataDao.load(formDefId, tableName, key);
-                    String existingValue = existingRow.get(fieldId).toString();
-                    String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
-                    FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
-                    comparedAgainstFieldValue = row.get(fieldId).toString(); 
-                    }catch (Exception e){
-                        comparedAgainstFieldValue = null;
-                    }
-                    
-                    //if the compared field is empty
-                    if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
+                if (tableName != null) {
+                    FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
+
+                    //if record does exist
+                    if (key != null) {
+                        try {
+                            FormRow existingRow = formDataDao.load(formDefId, tableName, key);
+                            String existingValue = existingRow.get(fieldId).toString();
+                            String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
+                            FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
+                            comparedAgainstFieldValue = row.get(fieldId).toString();
+                        } catch (Exception e) {
+                            comparedAgainstFieldValue = null;
                         }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
+
+                        //if the compared field is empty
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+
+                            return false;
                         }
-                        
-                        return false;
+                    } //if record is new
+                    else {
+                        try {
+                            comparedAgainstFieldValue = fieldValue[0];
+                        } catch (Exception e) {
+                            //handle exception when record is new, but compared value doesn't exist
+                            comparedAgainstFieldValue = null;
+                        }
+                        //if the compared field is empty           
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+                            return false;
+                        }
                     }
+
+                    float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
+
+                    if ((Float.compare(amountF, comparedAgainstFieldValueFloat) >= 0)) {
+                        if (customMessage == null || customMessage.isEmpty()) {
+                            data.addFormError(id, "Number Validation Failed");
+                        } else {
+                            data.addFormError(id, customMessage);
+                        }
+                        result = false;
+                    }
+
                 }
-                
-                //if record is new
-                else {
-                    try{
-                         comparedAgainstFieldValue = fieldValue[0];
-                    }catch (Exception e){
-                        //handle exception when record is new, but compared value doesn't exist
-                        comparedAgainstFieldValue = null;
-                    }
-                    //if the compared field is empty           
-                    if  (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
-                        }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
-                        }
-                     return false;
-                    }
-                    }
-                    
-                float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
-                
-                if ((Float.compare(amountF, comparedAgainstFieldValueFloat) >= 0)) {
-                    if (customMessage == null || customMessage.isEmpty()) {
-                        data.addFormError(id, "Number Validation Failed");
-                    } else {
-                        data.addFormError(id, customMessage);
-                    }
-                    result = false;
-                }
-                
-                } 
             }
         }
         return result;
     }
-    
+
     protected boolean validateLessThanOrEqual(FormData data, String id, String[] values, Float amountF, String customMessage, String emptyValueMessage, String formDefId, String fieldId, String customValue, String tableName, String key, String[] fieldValue) {
-     boolean result = true;
+        boolean result = true;
 
         if (values != null && values.length > 0) {
 
             if (customValue != null && !customValue.isEmpty()) {
 
-                Float valueF = Float.parseFloat(customValue);
+                Float valueF = Float.valueOf(customValue);
 
                 if ((Float.compare(amountF, valueF) > 0)) {
                     if (customMessage == null || customMessage.isEmpty()) {
@@ -603,76 +563,69 @@ public class NumberValidator extends FormValidator {
                     }
                     result = false;
                 }
-            } 
-            
-            else {
+            } else {
                 String comparedAgainstFieldValue;
-                
+
                 //grab value from form-field id logic
-                if(tableName != null){
-                FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
-                
-                
-                //if record does exist
-                if (key != null){
-                    try{
-                    FormRow existingRow = formDataDao.load(formDefId, tableName, key);
-                    String existingValue = existingRow.get(fieldId).toString();
-                    String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
-                    FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
-                    comparedAgainstFieldValue = row.get(fieldId).toString(); 
-                    }catch (Exception e){
-                        comparedAgainstFieldValue = null;
-                    }
-                    
-                    //if the compared field is empty
-                    if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
+                if (tableName != null) {
+                    FormDataDao formDataDao = (FormDataDao) AppUtil.getApplicationContext().getBean("formDataDao");
+
+                    //if record does exist
+                    if (key != null) {
+                        try {
+                            FormRow existingRow = formDataDao.load(formDefId, tableName, key);
+                            String existingValue = existingRow.get(fieldId).toString();
+                            String primaryKey = formDataDao.findPrimaryKey(formDefId, tableName, fieldId, existingValue);
+                            FormRow row = formDataDao.load(formDefId, tableName, primaryKey);
+                            comparedAgainstFieldValue = row.get(fieldId).toString();
+                        } catch (Exception e) {
+                            comparedAgainstFieldValue = null;
                         }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
+
+                        //if the compared field is empty
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+
+                            return false;
                         }
-                        
-                        return false;
+                    } //if record is new
+                    else {
+                        try {
+                            comparedAgainstFieldValue = fieldValue[0];
+                        } catch (Exception e) {
+                            //handle exception when record is new, but compared value doesn't exist
+                            comparedAgainstFieldValue = null;
+                        }
+                        //if the compared field is empty           
+                        if (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()) {
+                            if (emptyValueMessage == null || emptyValueMessage.isEmpty()) {
+                                data.addFormError(id, "Value of compared field value is empty");
+                            } else {
+                                data.addFormError(id, emptyValueMessage);
+                            }
+                            return false;
+                        }
                     }
+
+                    float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
+
+                    if ((Float.compare(amountF, comparedAgainstFieldValueFloat) > 0)) {
+                        if (customMessage == null || customMessage.isEmpty()) {
+                            data.addFormError(id, "Number Validation Failed");
+                        } else {
+                            data.addFormError(id, customMessage);
+                        }
+                        result = false;
+                    }
+
                 }
-                
-                //if record is new
-                else {
-                    try{
-                         comparedAgainstFieldValue = fieldValue[0];
-                    }catch (Exception e){
-                        //handle exception when record is new, but compared value doesn't exist
-                        comparedAgainstFieldValue = null;
-                    }
-                    //if the compared field is empty           
-                    if  (comparedAgainstFieldValue == null || comparedAgainstFieldValue.isEmpty() || fieldValue[0] == null || fieldValue[0].isEmpty()){
-                        if(emptyValueMessage == null || emptyValueMessage.isEmpty()){
-                             data.addFormError(id, "Value of compared field value is empty");
-                        }
-                        else{
-                            data.addFormError(id, emptyValueMessage);
-                        }
-                     return false;
-                    }
-                    }
-                    
-                float comparedAgainstFieldValueFloat = Float.parseFloat(comparedAgainstFieldValue);
-                
-                if ((Float.compare(amountF, comparedAgainstFieldValueFloat) > 0)) {
-                    if (customMessage == null || customMessage.isEmpty()) {
-                        data.addFormError(id, "Number Validation Failed");
-                    } else {
-                        data.addFormError(id, customMessage);
-                    }
-                    result = false;
-                }
-                
-                } 
             }
         }
         return result;
     }
-     
+
 }
